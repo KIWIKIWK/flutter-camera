@@ -1,0 +1,95 @@
+CustomPaint 에 대해 정리
+
+기본적으로 CustomPaint() 위젯을 사용
+size로 크기를 정하고 painter로 customPaint 클래스를 지정해 원하는대로 그림
+
+특정 클래스에 CustomPainter 클래스를 상속시키면
+CustomPaint()위젯의 painter에 넣어 그리기위한 클래스를 만들 수 있음.
+
+CustomPainter 클래스를 상속받은 클래스는
+기본적으로 shouldRepaint와 paint 메소드를 오버라이딩 해야됨.
+
+paint 메소드를 통해 그리기를 구현할 수있고
+shouldRepaint 메소드를 통해 다시 그리기를 사용할지 말지 정할 수 있음.(return true; 를 하면 사용)
+
+paint메소드는 기본적으로 Canvas canvas, Size size 매개변수를 갖고
+size는 CustomPaint() 위젯에서 지정해준 대로 가거나 지정하지 않았다면 부모 위젯의 크기를 가져감.
+
+그리는 작업은 기본적으로 size의 크기내에서 진행됨(아마도?)
+그림들이 그려질 위치를 정할때 (0,0)을 좌측상단으로 하는 x,y 좌표계를 사용해 위치를 정함(4사분면에서 그려진다고 생각하면됨. y가 커질수록 아래로가고, x가 커질수록 오른쪽으로감)
+
+보통 캔버스를 그릴때 캔버스의 위치를 size의 중심으로 둔뒤 이에 맞춰서 그린다고함.
+ex)
+xCenter = size.width / 2;
+yCenter = size.height / 2;
+
+canvas.translate(xCenter,yCenter)
+
+
+canvas.translate는 canvas의 원점의 위치를 상대적으로 움직임.
+ex) canvas의 원점은 기본적으로 (0,0)임. 그래서 만약 canvas.translate(100,100) 을 한다면 원점은 (100,100)이 됨.
+    그리고 이후 (30,-50) 을 하면 원점은 (70,50)이 됨.
+
+canvas.save()와 canvas.restore()
+메소드 명과 같이 canvas의 상태를 저장하고 다시 되돌리는 기능을함.
+이 상태에는 translate, rotate, scale 등이 저장됨.
+
+
+#Paint 객체
+Paint 객체는 어떤걸 그릴지 변수에 저장한다고 생각하면됨.
+ex)
+    final innerPaint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 4.0
+      ..strokeCap = StrokeCap.round;
+
+이러면 굵기가 4이고 색깔은 검정, 끝은 둥글한 선을 그리는 Paint 인스턴스라고 생각하면됨.
+
+그래서 캔버스에 그림을 그리기 위해서는 이러한 Paint를 만들어주고 이걸 캔버스의 원점에서 x,y 4사분면 좌표계에 따라서 그려준다고 생각하면됨.
+
+canvas.drawLine()
+이 메소드를 통해 선을 그릴수 있고, 인자값으로는 시작점, 끝점, Paint 가 들어감
+ex)
+canvas.drawLine(Offset(0,0),Offset(10,0),innerPaint);
+
+이렇게 쓰면 캔버스의 원점에서 오른쪽으로 10픽셀 만큼의 innerPaint의 속성을 가진 선을 그려준다는 거임.
+
+
+그리고
+canvas.rotate() 메소드를 통해 캔버스를 회전시킬 수 있음.
+양수면 시계, 음수면 반시계방향으로 회전되고
+값으로는 각도를 넣어주면 되는데 double 타입이고, 라디안 단위를 사용함. (라디안 = 각도 * (파이 / 180))
+그래서 예를들어 90도 라고 한다면 90*(3.141592 / 180) = 1.5708 라디안으로 값을 넣어주면 시계방향으로 90도 회전하게됨.
+
+여기서 캔버스가 회전 한다는 것은 x,y 좌표계가 회전한다고 생각하면됨.
+
+
+그래서 예를들어서 size가 100,100 인 사각형이 있는데 우측 상단 꼭짓점에 캔버스를 옮겨서 그리고 싶다면
+45도 만큼 회전시키고 중점에서 우측상단 꼭짓점까지의 거리를 계산해서 캔버스를 translate 해주면 우측 상단 꼭짓점에서 캔버스를 그릴 수 있음.
+
+
+#텍스트페인터
+텍스트를 그릴 수도 있음.
+TextPainter 객체를 통해 인스턴스를 생성할수 있고, 기존 텍스트 위젯과 유사한 속성값들을 설정할수 있음.
+ex)
+TextPainter tp = TextPainter(textDirection: TextDirection.ltr,);
+tp.text = "텍스트";
+tp.style = TextStyle(원하는 스타일);
+
+
+이렇게 생성한 TextPainter 를 그리기 위해서는 먼저 layout() 메소드를 실행하고 이후 paint() 메소드를 실행하면 캔버스 위치에서
+텍스트를 그릴 수 있음
+ex)
+tp.layout();
+tp.paint(
+    canvas,
+    Offset(0,0) # 텍스트를 그릴 시작점 설정(그 텍스트 위젯의 그 사각형 박스의 좌측 상단점을 설정하는거임)
+)
+
+
+정리하자면
+CustomPaint 위젯은 CustomPainter 클래스를 상속받은 클래스의 paint 메소드의 코드에 따라서
+위젯의 size 안에 그림을 그리고
+그림을 그리기 위한 paint 메소드의 코드 구조는
+그리고 싶은 paint 객체를 만들고 rotate와 translate를 캔버스의 원점을 설정하고
+canvas의 drwa 메소드를 통해 캔버스의 원점 기준 시작점과 끝점을 정한뒤 원하는 paint 객체를 그린다. 임.
